@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://bayesiansapien.tech/sitemap.xml

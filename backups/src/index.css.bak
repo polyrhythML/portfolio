@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/* Site base background so the canvas shows above it */
+body { background: #0b1220; }
+
+/* Fluorescent emerald text glow for hero name */
+.neon-emerald{
+  --neon-r:82; --neon-g:246; --neon-b:197; /* ~#52F6C5 to match the background field */
+  background: linear-gradient(90deg,
+    rgba(var(--neon-r),var(--neon-g),var(--neon-b),1) 0%,
+    rgba(190,255,240,1) 50%,
+    rgba(var(--neon-r),var(--neon-g),var(--neon-b),1) 100%);
+  -webkit-background-clip:text;
+          background-clip:text;
+  -webkit-text-fill-color:transparent;
+  text-shadow:
+    0 0 8px  rgba(var(--neon-r),var(--neon-g),var(--neon-b),0.60),
+    0 0 18px rgba(var(--neon-r),var(--neon-g),var(--neon-b),0.38),
+    0 0 34px rgba(var(--neon-r),var(--neon-g),var(--neon-b),0.24);
+  animation: neonPulse 3.8s ease-in-out infinite;
+}
+
+@keyframes neonPulse{
+  0%,100%{
+    text-shadow:
+      0 0 7px  rgba(var(--neon-r),var(--neon-g),var(--neon-b),0.55),
+      0 0 16px rgba(var(--neon-r),var(--neon-g),var(--neon-b),0.34),
+      0 0 28px rgba(var(--neon-r),var(--neon-g),var(--neon-b),0.20);
+  }
+  50%{
+    text-shadow:
+      0 0 10px rgba(var(--neon-r),var(--neon-g),var(--neon-b),0.70),
+      0 0 22px rgba(var(--neon-r),var(--neon-g),var(--neon-b),0.46),
+      0 0 40px rgba(var(--neon-r),var(--neon-g),var(--neon-b),0.30);
+  }
+}
+
+
+/* Poppins helper for hero bubble only */
+.poppins { font-family: "Poppins", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; }
+
+
+/* Grey glass bubble for social icons (applied at runtime to their container) */
+.social-glass{
+  background: rgba(31, 41, 55, 0.60); /* ~bg-gray-800/60 */
+  backdrop-filter: blur(8px) saturate(120%);
+  border-radius: 9999px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.15);
+  padding: 0.4rem 0.6rem;
+  gap: 0.5rem;
+  display: inline-flex; /* keep icon row tight */
+  align-items: center;
+}
+@supports not (backdrop-filter: blur(1px)){
+  .social-glass{ background: rgba(31,41,55,0.85); }
+}

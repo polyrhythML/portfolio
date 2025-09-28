@@ -1,0 +1,45 @@
+export default function Home() {
+  return (
+    <main className="max-w-5xl mx-auto px-4 py-16">
+      {/* centered hero bubble */}
+      <section className="grid justify-center pt-3 pb-12">
+        <div
+          id="hero-bubble"
+          className="relative w-full max-w-xl mx-auto text-center rounded-3xl p-6 md:p-8
+                      md: ring-1 ring-white/20 backdrop-blur-xl
+                     shadow-[0_0_70px_rgba(82,246,197,0.22)]
+                     after:content-[''] after:absolute after:inset-0 after:rounded-3xl
+                     after:pointer-events-none after:shadow-[0_0_140px_rgba(82,246,197,0.26)] overflow-hidden  backdrop-blur-2xl backdrop-saturate-150 z-10 bg-black/40"
+        >
+          <img
+            src="/avatar.png"
+            className="mx-auto mb-6 w-36 h-36 md:w-36 md:h-36 rounded-full object-cover ring-1 ring-white/15 shadow-lg"
+          />
+
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+          </h1>
+
+          <p className="mt-4 max-w-xl mx-auto text-slate-300">A Minimalist Bayesian Sapien contributing to the universe's entropy, being an AI researcher building efficient, sustainable intelligence—optimizing models via pruning, distillation, quantization, and routing to deliver lighter and faster systems. I also apply Quantum ML to combinatorial optimization, turning vast search spaces into practical results. Goal: universal-aware AI that respects energy, time, and scale.</p>
+
+          <div className="mt-6">
+            <a
+              href="https://bayesiansapien.substack.com/subscribe"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition"
+              aria-label="Subscribe by Email on Substack"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="0" y="0" width="24" height="24" rx="3" fill="#FF6719"></rect>
+                <rect x="4" y="6" width="16" height="2" fill="white"></rect>
+                <rect x="4" y="10" width="16" height="2" fill="white"></rect>
+                <rect x="8" y="14" width="8" height="6" fill="white"></rect>
+              </svg>
+              <span>Subscribe by Email</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}

@@ -1,0 +1,26 @@
+export default function Home() {
+  return (
+    <main className="max-w-5xl mx-auto px-4 py-16 grid gap-10">
+      <section className="text-center">
+        <h1 className="text-5xl font-bold tracking-tight">Bayesian Sapien</h1>
+        <p className="mt-4 text-lg text-slate-300">
+          I route uncertainty into answers — research in LLM routing, RL for cost–accuracy, and systems.
+        </p>
+        <div className="mt-8">
+          <a href="/ask" className="inline-block px-6 py-3 rounded-xl bg-cyan-400/20 hover:bg-cyan-400/30">
+            Ask me something
+          </a>
+        </div>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+        <a className="p-6 rounded-2xl bg-white/5 hover:bg-white/10" href="/resume.pdf">Resume →</a>
+        <a className="p-6 rounded-2xl bg-white/5 hover:bg-white/10" href="https://www.linkedin.com/in/your-handle" target="_blank" rel="noreferrer">LinkedIn →</a>
+        <a className="p-6 rounded-2xl bg-white/5 hover:bg-white/10" href="https://twitter.com/your-handle" target="_blank" rel="noreferrer">Twitter/X →</a>
+        <a className="p-6 rounded-2xl bg-white/5 hover:bg-white/10" href="https://yourblog.example.com" target="_blank" rel="noreferrer">Blog →</a>
+        <a className="p-6 rounded-2xl bg-white/5 hover:bg-white/10" href="https://github.com/your-handle" target="_blank" rel="noreferrer">GitHub →</a>
+        <a className="p-6 rounded-2xl bg-white/5 hover:bg-white/10" href="/ask">Quick Q&A →</a>
+      </section>
+    </main>
+  );
+}

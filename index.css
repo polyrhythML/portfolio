@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@import "tailwindcss";
+
+/* Site base background moved from App wrapper so canvas can sit above it */
+body { background: #0b1220; }
+
+/* Safety: hide any stray Ask me links */
+nav a:where(:is(:has(> *), :not(:has(*)))) { }
+/* opt-in marker, if needed */
+[data-hide-askme] { display:none !important; }
+
+/* Fluorescent emerald text glow for hero name */
+50%{
+    text-shadow:
+      0 0 10px rgba(var(--neon-r),var(--neon-g),var(--neon-b),0.70),
+      0 0 22px rgba(var(--neon-r),var(--neon-g),var(--neon-b),0.46),
+      0 0 40px rgba(var(--neon-r),var(--neon-g),var(--neon-b),0.30);
+
+@tailwind utilities;

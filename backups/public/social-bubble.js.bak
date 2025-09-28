@@ -1,0 +1,47 @@
+/* social-bubble.js — add a grey glass bubble to social icon cluster */
+(function(){
+  const DOMAINS = ["x.com", "twitter.com", "linkedin.com", "github.com", "substack", "medium.com"];
+
+  function isSocialLink(a){
+    try{
+      const href = a.getAttribute("href") || "";
+      return href && DOMAINS.some(d => href.includes(d));
+    }catch{ return false; }
+  }
+
+  function nca(nodes){
+    if (!nodes.length) return null;
+    // Collect ancestors of first node
+    const ancestors = [];
+    let cur = nodes[0];
+    while (cur){ ancestors.push(cur); cur = cur.parentElement; }
+    // For each ancestor, check it contains all nodes
+    for (const cand of ancestors){
+      if (nodes.every(n => cand.contains(n))) return cand;
+    }
+    return null;
+  }
+
+  function apply(){
+    const links = Array.from(document.querySelectorAll('a[href]')).filter(isSocialLink);
+    if (links.length === 0) return;
+
+    // If the icons are nested (svg > a), we still want the <a> node
+    const target = nca(links);
+    if (!target) return;
+
+    // Avoid double-applying
+    if (!target.classList.contains("social-glass")){
+      target.classList.add("social-glass");
+      // If it's not already positioned, keep whatever the app set; otherwise we won't change layout.
+      // We only add a higher z-index to ensure it stays above the canvas glow.
+      target.style.zIndex = target.style.zIndex || "20";
+    }
+  }
+
+  // Run on load and watch for changes (SPA/React mounts)
+  const mo = new MutationObserver(() => apply());
+  window.addEventListener("DOMContentLoaded", apply);
+  window.addEventListener("load", apply);
+  mo.observe(document.documentElement, { childList:true, subtree:true });
+})();
