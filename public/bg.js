@@ -1,203 +1,305 @@
-/* Neuron field — oval layout, mid-wide spread, gentle rotation, and a soft cutout under #hero-bubble */
+/* Wobble-free neural background - written from scratch */
 (() => {
+  // State management
+  let isInitialized = false;
+  let animationId = null;
+  let nodes = [];
+  let lastTime = 0;
+  
+  // Canvas setup
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d", { alpha: true });
+  
+  // Start completely invisible and behind everything
   Object.assign(canvas.style, {
     position: "fixed",
-    inset: "0",
+    top: "0",
+    left: "0", 
     width: "100vw",
     height: "100vh",
-    zIndex: "0",
+    zIndex: "-1",
     pointerEvents: "none",
+    opacity: "0",
+    transition: "opacity 0.4s ease-out"
   });
-  document.body.appendChild(canvas);
-
   
-  // Toggle spark arcs in the neuron field
-  const SPARKS_ENABLED = false;
-const DPR = () => window.devicePixelRatio || 1;
-  function resize() {
-    const dpr = DPR();
-    canvas.width  = Math.floor(innerWidth * dpr);
-    canvas.height = Math.floor(innerHeight * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  document.body.appendChild(canvas);
+  
+  // Configuration
+  const config = {
+    nodeCount: 350, // Reduced from 450
+    maxRadius: 0.45, // percentage of smaller dimension
+    color: { r: 82, g: 246, b: 197 },
+    pulseSpeed: 0.015,
+    orbitalSpeed: 0.0008, // Increased from 0.0003
+    ovalStretch: 0.8 // Y compression for oval shape
+  };
+  
+  function rgba(alpha) {
+    return `rgba(${config.color.r}, ${config.color.g}, ${config.color.b}, ${alpha})`;
   }
-  resize();
-  addEventListener("resize", resize, { passive: true });
-
-  // Color
-  const C = { r: 82, g: 246, b: 197 };
-  const rgba = (a) => `rgba(${C.r}, ${C.g}, ${C.b}, ${a})`;
-
-  // Adaptive oval scaling
-  function ovalScale(strength = 0.38) {
-    const aspect = innerWidth / innerHeight;
-    const a = Math.max(-1, Math.min(1, (aspect - 1)));
-    const ox = 1 + Math.max(0,  a) * strength; // stretch X on wide
-    const oy = 1 - Math.max(0, -a) * strength; // stretch Y on tall
-    return { ox, oy };
+  
+  // Proper canvas sizing
+  function resizeCanvas() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+    
+    ctx.scale(dpr, dpr);
   }
-
-  // Rounded-rect helper
-  function roundRectPath(ctx, x, y, w, h, r) {
-    const rr = Math.max(0, Math.min(r, Math.min(w, h) / 2));
-    ctx.beginPath();
-    ctx.moveTo(x + rr, y);
-    ctx.arcTo(x + w, y,     x + w, y + h, rr);
-    ctx.arcTo(x + w, y + h, x,     y + h, rr);
-    ctx.arcTo(x,     y + h, x,     y,     rr);
-    ctx.arcTo(x,     y,     x + w, y,     rr);
-    ctx.closePath();
-  }
-
-  // Get hero bubble rect (for masking)
-  function getBubbleRect(pad = 14) {
-    const el = document.getElementById("hero-bubble");
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    return {
-      x: r.left - pad,
-      y: r.top  - pad,
-      w: r.width  + pad * 2,
-      h: r.height + pad * 2,
-      radius: 18 // soft corners for the cutout
-    };
-  }
-
-  const state = { nodes: [], sparks: [] };
-
-  function initNodes() {
-    state.nodes = [];
-    const w = innerWidth, h = innerHeight;
-    const cx = w / 2, cy = h / 2;
-    const minSide = Math.min(w, h);
-
-    // Spread you liked
-    const maxR = (minSide * 0.5) * 1.12;
-
-    // Density tuned for that spread (lower number => more points)
-    const BASE_STAR_AREA = 12500;
-    const total = Math.max(260, Math.floor((w * h) / BASE_STAR_AREA));
-
-    for (let i = 0; i < total; i++) {
-      const angle  = Math.random() * Math.PI * 2;
-      const radius = Math.sqrt(Math.random()) * maxR;
-
-      const x = cx + Math.cos(angle) * radius;
-      const y = cy + Math.sin(angle) * radius;
-
-      state.nodes.push({
-        angle,
-        radius,
-        angVel: (Math.random() * 0.00045 + 0.00018), // gentle
-        ox: 1.0, oy: 1.0,
-
-        x, y,
-        vx: (Math.random() - 0.5) * 0.08,
-        vy: (Math.random() - 0.5) * 0.08,
-
-        r: Math.random() * 1.8 + 0.9,
-        phase: Math.random() * Math.PI * 2,
-        speed: Math.random() * 0.020 + 0.010,
-        glow: Math.random() * 0.35 + 0.2,
-        lastSpark: 0,
+  
+  // Create node distribution
+  function createNodes() {
+    nodes = [];
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    // Use larger radius to cover full viewport
+    const maxDistX = width * 0.6;  // 60% of width
+    const maxDistY = height * 0.6; // 60% of height
+    
+    for (let i = 0; i < config.nodeCount; i++) {
+      // Generate points in an ellipse covering most of the viewport
+      const angle = Math.random() * Math.PI * 2;
+      const radiusNorm = Math.sqrt(Math.random()); // 0 to 1
+      
+      // Calculate position using elliptical distribution
+      const radiusX = radiusNorm * maxDistX;
+      const radiusY = radiusNorm * maxDistY;
+      
+      // Base position
+      const baseX = centerX + Math.cos(angle) * radiusX;
+      const baseY = centerY + Math.sin(angle) * radiusY;
+      
+      nodes.push({
+        // Fixed orbital properties
+        centerX: centerX,
+        centerY: centerY, 
+        baseAngle: angle,
+        baseRadiusX: radiusX,
+        baseRadiusY: radiusY,
+        orbitalSpeed: (Math.random() * 0.5 + 0.5) * config.orbitalSpeed,
+        
+        // Current position (starts at base)
+        x: baseX,
+        y: baseY,
+        
+        // Visual properties
+        size: Math.random() * 2 + 1,
+        pulsePhase: Math.random() * Math.PI * 2,
+        pulseSpeed: (Math.random() * 0.5 + 0.5) * config.pulseSpeed,
+        brightness: Math.random() * 0.4 + 0.6,
+        
+        // Gentle drift
+        driftX: (Math.random() - 0.5) * 0.02,
+        driftY: (Math.random() - 0.5) * 0.02
       });
     }
   }
-
-  function /* addSpark disabled */ addSpark(a, b) {
-    const midX = (a.x + b.x) / 2, midY = (a.y + b.y) / 2;
-    const d = Math.hypot(b.x - a.x, b.y - a.y);
-    const swirl = d * 0.18 * (Math.random() - 0.5);
-    state.sparks.push({
-      start: { x: a.x, y: a.y },
-      end:   { x: b.x, y: b.y },
-      cp: [
-        { x: a.x + (midX - a.x) * 0.35 + swirl, y: a.y + (midY - a.y) * 0.35 - swirl },
-        { x: midX + swirl * 1.2, y: midY + swirl * 0.8 },
-        { x: b.x + (midX - b.x) * 0.35 - swirl, y: b.y + (midY - b.y) * 0.35 + swirl }
-      ],
-      t: 0,
-      v: Math.random() * 0.10 + 0.06,
-      life: 1,
-      decay: Math.random() * 0.035 + 0.018,
-      intensity: Math.random() * 0.6 + 0.25
-    });
+  
+  // Get hero bubble for masking
+  function getHeroBubble() {
+    const el = document.getElementById("hero-bubble");
+    if (!el) return null;
+    
+    const rect = el.getBoundingClientRect();
+    return {
+      x: rect.left - 20,
+      y: rect.top - 20,
+      width: rect.width + 40,
+      height: rect.height + 40,
+      radius: 20
+    };
   }
-
-  function lerpPt(a, b, t){ return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }; }
-
-  function step(ts) {
-    const w = innerWidth, h = innerHeight;
-    const cx = w / 2, cy = h / 2;
-    ctx.clearRect(0, 0, w, h);
-
-    const oval = ovalScale(0.38);
-
-    // nodes
-    for (const n of state.nodes) {
-      n.ox = oval.ox; n.oy = oval.oy;
-
-      n.angle += n.angVel;
-      const tx = cx + Math.cos(n.angle) * n.radius * n.ox;
-      const ty = cy + Math.sin(n.angle) * n.radius * n.oy;
-
-      n.vx = n.vx * 0.986 + (tx - n.x) * 0.018 + (Math.random() - 0.5) * 0.0025;
-      n.vy = n.vy * 0.986 + (ty - n.y) * 0.018 + (Math.random() - 0.5) * 0.0025;
-      n.x += n.vx; n.y += n.vy;
-
-      n.phase += n.speed;
-      const pulse = (Math.sin(n.phase) + 1) * 0.5;
-      const rr = n.r + pulse * 1.0;
-      const glow = n.glow + pulse * 0.25;
-
-      // halo
-      const halo = rr * 2.6;
-      const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, halo);
-      g.addColorStop(0, rgba(glow * 0.18));
-      g.addColorStop(0.5, rgba(glow * 0.06));
-      g.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(n.x, n.y, halo, 0, Math.PI * 2); ctx.fill();
-
-      // core
-      const g2 = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, rr);
-      g2.addColorStop(0, rgba(glow));
-      g2.addColorStop(1, rgba(glow * 0.2));
-      ctx.fillStyle = g2;
-      ctx.beginPath(); ctx.arc(n.x, n.y, rr, 0, Math.PI * 2); ctx.fill();
-
-      // uniform spark chance
-      if (pulse > 0.72 && ts - n.lastSpark > 1600 && Math.random() < 0.008) {
-        let cand = null, best = 1e9;
-        for (const m of state.nodes) {
-          if (m === n) continue;
-          const d = Math.hypot(m.x - n.x, m.y - n.y);
-          if (d < 240 && d > 40 && d < best) { best = d; cand = m; }
-        }
-        if (cand) { /* addSpark disabled */ addSpark(n, cand); n.lastSpark = ts; }
+  
+  // Draw rounded rectangle path
+  function drawRoundedRect(x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  }
+  
+  // Animation loop
+  function animate(currentTime) {
+    if (!isInitialized) return;
+    
+    const deltaTime = currentTime - lastTime;
+    lastTime = currentTime;
+    
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+    
+    // Update and draw nodes
+    nodes.forEach(node => {
+      // Update orbital position
+      node.baseAngle += node.orbitalSpeed;
+      
+      // Calculate target orbital position using elliptical orbit
+      const targetX = node.centerX + Math.cos(node.baseAngle) * node.baseRadiusX;
+      const targetY = node.centerY + Math.sin(node.baseAngle) * node.baseRadiusY;
+      
+      // Gentle movement toward target with drift
+      node.x += (targetX - node.x) * 0.02 + node.driftX;
+      node.y += (targetY - node.y) * 0.02 + node.driftY;
+      
+      // Update pulse
+      node.pulsePhase += node.pulseSpeed;
+      const pulse = (Math.sin(node.pulsePhase) + 1) * 0.5;
+      
+      // Calculate current visual properties
+      const currentSize = node.size + pulse * 1.5;
+      const currentBrightness = node.brightness + pulse * 0.3;
+      const haloSize = currentSize * 2.5;
+      
+      // Draw halo
+      if (pulse > 0.7) { // Increased threshold from 0.5 to 0.7
+        const haloGradient = ctx.createRadialGradient(
+          node.x, node.y, 0,
+          node.x, node.y, haloSize
+        );
+        haloGradient.addColorStop(0, rgba(currentBrightness * 0.2));
+        haloGradient.addColorStop(0.4, rgba(currentBrightness * 0.1));
+        haloGradient.addColorStop(1, rgba(0));
+        
+        ctx.fillStyle = haloGradient;
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, haloSize, 0, Math.PI * 2);
+        ctx.fill();
       }
+      
+      // Draw core node
+      const nodeGradient = ctx.createRadialGradient(
+        node.x, node.y, 0,
+        node.x, node.y, currentSize
+      );
+      nodeGradient.addColorStop(0, rgba(currentBrightness));
+      nodeGradient.addColorStop(1, rgba(currentBrightness * 0.2));
+      
+      ctx.fillStyle = nodeGradient;
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, currentSize, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // Apply hero bubble mask
+    const bubble = getHeroBubble();
+    if (bubble) {
+      ctx.save();
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.shadowColor = "rgba(0,0,0,1)";
+      ctx.shadowBlur = 25;
+      drawRoundedRect(bubble.x, bubble.y, bubble.width, bubble.height, bubble.radius);
+      ctx.fillStyle = "rgba(0,0,0,1)";
+      ctx.fill();
+      ctx.restore();
     }
-
-    // sparks disabled
-requestAnimationFrame(step);
+    
+    animationId = requestAnimationFrame(animate);
   }
-
-  addEventListener("resize", initNodes, { passive: true });
-  initNodes();
-    // ---- Soft cutout under hero (erase dots inside the card) ----
-  const bubble = getBubbleRect(20); // padding around the card
-  if (bubble) {
-    ctx.save();
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.shadowColor = "rgba(0,0,0,1)";
-    ctx.shadowBlur = 28; // feather strength
-    roundRectPath(ctx, bubble.x, bubble.y, bubble.w, bubble.h, bubble.radius);
-    ctx.fillStyle = "rgba(0,0,0,1)";
-    ctx.fill();
-    ctx.restore();
+  
+  // Debounced resize handler
+  let resizeTimeout;
+  function handleResize() {
+    if (resizeTimeout) clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      resizeCanvas();
+      if (isInitialized) {
+        // Update node centers for new viewport
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        nodes.forEach(node => {
+          node.centerX = centerX;
+          node.centerY = centerY;
+        });
+      }
+    }, 100); // Longer delay to ensure layout is stable
   }
-
-  requestAnimationFrame(step);
-}
-)();
+  
+  // Initialize everything
+  function initialize() {
+    resizeCanvas();
+    createNodes();
+    isInitialized = true;
+    
+    // Start animation
+    animationId = requestAnimationFrame(animate);
+    
+    // Fade in after everything is ready
+    setTimeout(() => {
+      canvas.style.opacity = "1";
+    }, 150);
+  }
+  
+  // Wait for stable environment
+  function waitForStability() {
+    let stabilityChecks = 0;
+    let lastWidth = window.innerWidth;
+    let lastHeight = window.innerHeight;
+    
+    function checkStable() {
+      const currentWidth = window.innerWidth;
+      const currentHeight = window.innerHeight;
+      
+      if (currentWidth === lastWidth && currentHeight === lastHeight) {
+        stabilityChecks++;
+        if (stabilityChecks >= 3) {
+          // Stable for 3 checks
+          initialize();
+          return;
+        }
+      } else {
+        stabilityChecks = 0;
+        lastWidth = currentWidth;
+        lastHeight = currentHeight;
+      }
+      
+      setTimeout(checkStable, 100);
+    }
+    
+    setTimeout(checkStable, 200);
+  }
+  
+  // Start when everything is ready
+  function start() {
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        setTimeout(waitForStability, 100);
+      });
+    } else {
+      setTimeout(waitForStability, 300);
+    }
+  }
+  
+  // Event listeners
+  window.addEventListener("resize", handleResize);
+  
+  // Cleanup
+  window.addEventListener("beforeunload", () => {
+    if (animationId) cancelAnimationFrame(animationId);
+  });
+  
+  // Begin initialization
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start);
+  } else {
+    start();
+  }
+})();
