@@ -131,7 +131,7 @@ export default function RecentBlogPosts() {
           <article 
             key={post.id}
             style={{
-              backgroundColor: 'rgba(11, 18, 32, 0.00005)',
+              backgroundColor: 'rgba(11, 18, 32, 0.01)',
               backdropFilter: 'blur(24px)',
               WebkitBackdropFilter: 'blur(24px)',
               position: 'relative',
@@ -140,10 +140,10 @@ export default function RecentBlogPosts() {
             }}
             className="flex flex-col md:flex-row gap-6 p-6 rounded-xl transition-all duration-300 border-[3px] border-emerald-400/50 hover:border-emerald-400/70 hover:shadow-[0_12px_40px_rgba(0,0,0,0.5),0_0_0_4px_rgba(82,246,197,0.4),inset_0_1px_0_rgba(255,255,255,0.15)]"
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(11, 18, 32, 0.001)';
+              e.currentTarget.style.backgroundColor = 'rgba(11, 18, 32, 0.05)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(11, 18, 32, 0.00005)';
+              e.currentTarget.style.backgroundColor = 'rgba(11, 18, 32, 0.01)';
             }}
           >
             <div className="md:w-48 md:flex-shrink-0">
